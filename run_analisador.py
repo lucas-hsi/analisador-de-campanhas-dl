@@ -129,10 +129,12 @@ def carregar_anuncios(uploaded_file):
 
 # --- FUNÇÃO DE ANÁLISE COM GEMINI (O NOVO CÉREBRO) ---
 
+# ==============================================================================
+# ANALISE DE IA
+# ==============================================================================
 def analisar_anuncios_com_gemini(bloco_df):
     """Envia um bloco de anúncios para a API do Gemini e retorna uma análise estruturada e inteligente."""
     
-    # Converte o bloco de dados para uma string formatada para o prompt
     dados_str = ""
     for _, row in bloco_df.iterrows():
         dados_str += f"""- Anúncio: {row['anuncio']} | Impressões: {int(row['impressoes'])} | Cliques: {int(row['cliques'])} | CTR: {row['ctr']:.2f}% | CVR: {row['cvr']:.2f}% | Investimento: R${row['investimento']:.2f} | Receita: R${row['receita']:.2f} | ACOS: {row['acos']:.2f}% | ACOS Objetivo: {int(row['acos_objetivo'])}% | Perda Orçamento: {int(row['perda_orcamento'])}% | Perda Classificação: {int(row['perda_classificacao'])}%\n"""
@@ -140,7 +142,7 @@ def analisar_anuncios_com_gemini(bloco_df):
     prompt = f"""
 Você é um Diretor de Performance sênior da DL Auto Peças, especialista em Mercado Livre Ads. Sua análise deve ser estratégica, direta e focada em resultados financeiros para o dono da empresa.
 
-Analise os dados dos anúncios abaixo. Para CADA um, forneça uma análise completa.
+Analise os dados dos anúncios abaixo. Para CADA UM, forneça uma análise completa.
 
 **Regras da Análise:**
 1.  **ACOS é Rei:** A métrica mais importante é o ACOS. Compare o ACOS real com o ACOS Objetivo.
@@ -165,12 +167,25 @@ Sua resposta DEVE ser um único bloco de código JSON, com uma chave principal "
 """
     try:
         model = genai.GenerativeModel('gemini-1.5-pro-latest')
-        response = model.generate_content(prompt)
+        
+        # --- A GRANDE MUDANÇA ESTÁ AQUI ---
+        # Configuração para forçar a resposta a ser determinística (sem criatividade)
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.0
+        )
+        
+        # Passamos a configuração na chamada da API
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config
+        )
+        # --- FIM DA MUDANÇA ---
+
         cleaned_json_str = response.text.strip().replace("```json", "").replace("```", "")
         return json.loads(cleaned_json_str)
     except Exception as e:
         st.error(f"Ocorreu um erro na chamada da API: {e}")
-        st.code(prompt) # Mostra o prompt que causou o erro
+        st.code(prompt)
         return None
 
 # --- FUNÇÕES DE GERAÇÃO DE RELATÓRIO (A NOVA APRESENTAÇÃO) ---
